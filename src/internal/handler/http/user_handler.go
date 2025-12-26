@@ -48,7 +48,7 @@ func (h *UserHandler) Create(c *fiber.Ctx) error {
 		Role:        req.Role,
 	}
 
-	if err := h.usecase.CreateUser(&user); err != nil {
+	if err := h.usecase.CreateUser(c.UserContext(), &user); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(domain.APIResponse{
 			Status:  fiber.StatusInternalServerError,
 			Message: err.Error(),
@@ -71,7 +71,7 @@ func (h *UserHandler) Get(c *fiber.Ctx) error {
 		})
 	}
 
-	user, err := h.usecase.GetUser(id)
+	user, err := h.usecase.GetUser(c.UserContext(), id)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(domain.APIResponse{
 			Status:  fiber.StatusNotFound,
@@ -104,7 +104,7 @@ func (h *UserHandler) Update(c *fiber.Ctx) error {
 	}
 
 	user.ID = id
-	if err := h.usecase.UpdateUser(&user); err != nil {
+	if err := h.usecase.UpdateUser(c.UserContext(), &user); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(domain.APIResponse{
 			Status:  fiber.StatusInternalServerError,
 			Message: err.Error(),
@@ -127,7 +127,7 @@ func (h *UserHandler) Delete(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := h.usecase.DeleteUser(id); err != nil {
+	if err := h.usecase.DeleteUser(c.UserContext(), id); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(domain.APIResponse{
 			Status:  fiber.StatusInternalServerError,
 			Message: err.Error(),
@@ -141,7 +141,7 @@ func (h *UserHandler) Delete(c *fiber.Ctx) error {
 }
 
 func (h *UserHandler) List(c *fiber.Ctx) error {
-	users, err := h.usecase.ListUsers()
+	users, err := h.usecase.ListUsers(c.UserContext())
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(domain.APIResponse{
 			Status:  fiber.StatusInternalServerError,

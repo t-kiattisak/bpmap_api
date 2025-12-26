@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"pbmap_api/src/domain"
 
 	"github.com/google/uuid"
@@ -8,11 +9,11 @@ import (
 )
 
 type UserRepository interface {
-	Create(user *domain.User) error
-	FindByID(id uuid.UUID) (*domain.User, error)
-	Update(user *domain.User) error
-	Delete(id uuid.UUID) error
-	FindAll() ([]domain.User, error)
+	Create(ctx context.Context, user *domain.User) error
+	FindByID(ctx context.Context, id uuid.UUID) (*domain.User, error)
+	Update(ctx context.Context, user *domain.User) error
+	Delete(ctx context.Context, id uuid.UUID) error
+	FindAll(ctx context.Context) ([]domain.User, error)
 }
 
 type userRepository struct {
@@ -23,13 +24,13 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepository{db}
 }
 
-func (r *userRepository) Create(user *domain.User) error {
-	return r.db.Create(user).Error
+func (r *userRepository) Create(ctx context.Context, user *domain.User) error {
+	return GetDB(ctx, r.db).Create(user).Error
 }
 
-func (r *userRepository) FindByID(id uuid.UUID) (*domain.User, error) {
+func (r *userRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
 	var user domain.User
-	err := r.db.Preload("SocialAccounts").
+	err := GetDB(ctx, r.db).Preload("SocialAccounts").
 		Preload("SpecialCredential").
 		Preload("Devices").
 		Preload("Sessions").
@@ -37,16 +38,16 @@ func (r *userRepository) FindByID(id uuid.UUID) (*domain.User, error) {
 	return &user, err
 }
 
-func (r *userRepository) Update(user *domain.User) error {
-	return r.db.Model(user).Updates(user).Error
+func (r *userRepository) Update(ctx context.Context, user *domain.User) error {
+	return GetDB(ctx, r.db).Model(user).Updates(user).Error
 }
 
-func (r *userRepository) Delete(id uuid.UUID) error {
-	return r.db.Delete(&domain.User{}, "id = ?", id).Error
+func (r *userRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	return GetDB(ctx, r.db).Delete(&domain.User{}, "id = ?", id).Error
 }
 
-func (r *userRepository) FindAll() ([]domain.User, error) {
+func (r *userRepository) FindAll(ctx context.Context) ([]domain.User, error) {
 	var users []domain.User
-	err := r.db.Find(&users).Error
+	err := GetDB(ctx, r.db).Find(&users).Error
 	return users, err
 }

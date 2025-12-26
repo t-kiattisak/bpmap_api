@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"pbmap_api/src/domain"
 	"pbmap_api/src/internal/repository"
 
@@ -8,11 +9,11 @@ import (
 )
 
 type UserUsecase interface {
-	CreateUser(user *domain.User) error
-	GetUser(id uuid.UUID) (*domain.User, error)
-	UpdateUser(user *domain.User) error
-	DeleteUser(id uuid.UUID) error
-	ListUsers() ([]domain.User, error)
+	CreateUser(ctx context.Context, user *domain.User) error
+	GetUser(ctx context.Context, id uuid.UUID) (*domain.User, error)
+	UpdateUser(ctx context.Context, user *domain.User) error
+	DeleteUser(ctx context.Context, id uuid.UUID) error
+	ListUsers(ctx context.Context) ([]domain.User, error)
 }
 
 type userUsecase struct {
@@ -23,22 +24,22 @@ func NewUserUsecase(userRepo repository.UserRepository) UserUsecase {
 	return &userUsecase{userRepo}
 }
 
-func (u *userUsecase) CreateUser(user *domain.User) error {
-	return u.userRepo.Create(user)
+func (u *userUsecase) CreateUser(ctx context.Context, user *domain.User) error {
+	return u.userRepo.Create(ctx, user)
 }
 
-func (u *userUsecase) GetUser(id uuid.UUID) (*domain.User, error) {
-	return u.userRepo.FindByID(id)
+func (u *userUsecase) GetUser(ctx context.Context, id uuid.UUID) (*domain.User, error) {
+	return u.userRepo.FindByID(ctx, id)
 }
 
-func (u *userUsecase) UpdateUser(user *domain.User) error {
-	return u.userRepo.Update(user)
+func (u *userUsecase) UpdateUser(ctx context.Context, user *domain.User) error {
+	return u.userRepo.Update(ctx, user)
 }
 
-func (u *userUsecase) DeleteUser(id uuid.UUID) error {
-	return u.userRepo.Delete(id)
+func (u *userUsecase) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	return u.userRepo.Delete(ctx, id)
 }
 
-func (u *userUsecase) ListUsers() ([]domain.User, error) {
-	return u.userRepo.FindAll()
+func (u *userUsecase) ListUsers(ctx context.Context) ([]domain.User, error) {
+	return u.userRepo.FindAll(ctx)
 }
