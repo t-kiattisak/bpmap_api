@@ -7,36 +7,36 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"pbmap_api/src/config"
 	"pbmap_api/src/internal/dto"
 	"pbmap_api/src/internal/repository"
 	"pbmap_api/src/pkg/auth"
 	"time"
 
+	"github.com/google/uuid"
 	"google.golang.org/api/idtoken"
 )
 
 type AuthService interface {
 	LoginWithSocial(ctx context.Context, req *dto.SocialLoginRequest) (*dto.LoginResponse, error)
+	Logout(ctx context.Context, userID uuid.UUID) error
 }
 
 type authService struct {
-	userUsecase UserUsecase
-	tokenRepo   repository.TokenRepository
-	jwtService  *auth.JWTService
-	config      AuthConfig
+	userUsecase    UserUsecase
+	tokenRepo      repository.TokenRepository
+	jwtService     *auth.JWTService
+	googleClientID string
+	lineChannelID  string
 }
 
-type AuthConfig struct {
-	GoogleClientID string
-	LineChannelID  string
-}
-
-func NewAuthService(userUsecase UserUsecase, tokenRepo repository.TokenRepository, jwtService *auth.JWTService, config AuthConfig) AuthService {
+func NewAuthService(userUsecase UserUsecase, tokenRepo repository.TokenRepository, jwtService *auth.JWTService, cfg *config.Config) AuthService {
 	return &authService{
-		userUsecase: userUsecase,
-		tokenRepo:   tokenRepo,
-		jwtService:  jwtService,
-		config:      config,
+		userUsecase:    userUsecase,
+		tokenRepo:      tokenRepo,
+		jwtService:     jwtService,
+		googleClientID: cfg.GoogleClientID,
+		lineChannelID:  cfg.LineChannelID,
 	}
 }
 
@@ -80,11 +80,11 @@ func (s *authService) LoginWithSocial(ctx context.Context, req *dto.SocialLoginR
 }
 
 func (s *authService) verifyGoogleToken(token string) (string, error) {
-	if s.config.GoogleClientID == "" || s.config.GoogleClientID == "mock" {
+	if s.googleClientID == "" || s.googleClientID == "mock" {
 		return token, nil
 	}
 
-	payload, err := idtoken.Validate(context.Background(), token, s.config.GoogleClientID)
+	payload, err := idtoken.Validate(context.Background(), token, s.googleClientID)
 	if err != nil {
 		return "", fmt.Errorf("invalid google token: %v", err)
 	}
@@ -93,37 +93,35 @@ func (s *authService) verifyGoogleToken(token string) (string, error) {
 }
 
 func (s *authService) verifyLineToken(token string) (string, error) {
-	if s.config.LineChannelID == "" || s.config.LineChannelID == "mock" {
-		return token, nil
-	}
-
 	apiURL := "https://api.line.me/oauth2/v2.1/verify"
 	data := url.Values{}
 	data.Set("id_token", token)
-	data.Set("client_id", s.config.LineChannelID)
+	data.Set("client_id", s.lineChannelID)
 
 	resp, err := http.PostForm(apiURL, data)
 	if err != nil {
-		return "", fmt.Errorf("failed to verify line token: %v", err)
+		return "", fmt.Errorf("failed to verify line id token: %v", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("line token verification failed: status=%d, body=%s", resp.StatusCode, string(bodyBytes))
+		return "", fmt.Errorf("line id token verification failed: status=%d, body=%s", resp.StatusCode, string(bodyBytes))
 	}
 
-	var result struct {
-		Sub string `json:"sub"`
-	}
+	var result dto.LineIDTokenResponse
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return "", fmt.Errorf("failed to decode line response: %v", err)
 	}
 
 	if result.Sub == "" {
-		return "", fmt.Errorf("line token valid but sub (user id) is empty")
+		return "", fmt.Errorf("line id token valid but sub is empty")
 	}
 
 	return result.Sub, nil
+}
+
+func (s *authService) Logout(ctx context.Context, userID uuid.UUID) error {
+	return s.tokenRepo.DeleteAppToken(ctx, userID.String())
 }
