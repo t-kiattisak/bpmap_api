@@ -20,20 +20,23 @@ type AuthService interface {
 }
 
 type authService struct {
-	userUsecase    UserUsecase
-	tokenRepo      repository.TokenRepository
-	jwtService     *auth.JWTService
-	googleClientID string
-	lineChannelID  string
+	userUsecase UserUsecase
+	tokenRepo   repository.TokenRepository
+	jwtService  *auth.JWTService
+	config      AuthConfig
 }
 
-func NewAuthService(userUsecase UserUsecase, tokenRepo repository.TokenRepository, jwtService *auth.JWTService, googleClientID, lineChannelID string) AuthService {
+type AuthConfig struct {
+	GoogleClientID string
+	LineChannelID  string
+}
+
+func NewAuthService(userUsecase UserUsecase, tokenRepo repository.TokenRepository, jwtService *auth.JWTService, config AuthConfig) AuthService {
 	return &authService{
-		userUsecase:    userUsecase,
-		tokenRepo:      tokenRepo,
-		jwtService:     jwtService,
-		googleClientID: googleClientID,
-		lineChannelID:  lineChannelID,
+		userUsecase: userUsecase,
+		tokenRepo:   tokenRepo,
+		jwtService:  jwtService,
+		config:      config,
 	}
 }
 
@@ -77,11 +80,11 @@ func (s *authService) LoginWithSocial(ctx context.Context, req *dto.SocialLoginR
 }
 
 func (s *authService) verifyGoogleToken(token string) (string, error) {
-	if s.googleClientID == "" || s.googleClientID == "mock" {
+	if s.config.GoogleClientID == "" || s.config.GoogleClientID == "mock" {
 		return token, nil
 	}
 
-	payload, err := idtoken.Validate(context.Background(), token, s.googleClientID)
+	payload, err := idtoken.Validate(context.Background(), token, s.config.GoogleClientID)
 	if err != nil {
 		return "", fmt.Errorf("invalid google token: %v", err)
 	}
@@ -90,14 +93,14 @@ func (s *authService) verifyGoogleToken(token string) (string, error) {
 }
 
 func (s *authService) verifyLineToken(token string) (string, error) {
-	if s.lineChannelID == "" || s.lineChannelID == "mock" {
+	if s.config.LineChannelID == "" || s.config.LineChannelID == "mock" {
 		return token, nil
 	}
 
 	apiURL := "https://api.line.me/oauth2/v2.1/verify"
 	data := url.Values{}
 	data.Set("id_token", token)
-	data.Set("client_id", s.lineChannelID)
+	data.Set("client_id", s.config.LineChannelID)
 
 	resp, err := http.PostForm(apiURL, data)
 	if err != nil {

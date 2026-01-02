@@ -67,7 +67,10 @@ func Run(cfg *config.Config, db *gorm.DB) {
 
 	jwtService := auth.NewJWTService(cfg.JWTSecret)
 
-	authService := usecase.NewAuthService(userUsecase, tokenRepo, jwtService, cfg.GoogleClientID, cfg.LineChannelID)
+	authService := usecase.NewAuthService(userUsecase, tokenRepo, jwtService, usecase.AuthConfig{
+		GoogleClientID: cfg.GoogleClientID,
+		LineChannelID:  cfg.LineChannelID,
+	})
 	authHandler := handler.NewAuthHandler(authService, v)
 
 	userHandler := handler.NewUserHandler(userUsecase, v, jwtService)
