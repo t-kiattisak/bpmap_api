@@ -14,6 +14,7 @@ type UserRepository interface {
 	Update(ctx context.Context, user *domain.User) error
 	Delete(ctx context.Context, id uuid.UUID) error
 	FindAll(ctx context.Context) ([]domain.User, error)
+	FindBySocialID(ctx context.Context, provider, providerID string) (*domain.User, error)
 }
 
 type userRepository struct {
@@ -50,4 +51,17 @@ func (r *userRepository) FindAll(ctx context.Context) ([]domain.User, error) {
 	var users []domain.User
 	err := GetDB(ctx, r.db).Find(&users).Error
 	return users, err
+}
+
+func (r *userRepository) FindBySocialID(ctx context.Context, provider, providerID string) (*domain.User, error) {
+	var user domain.User
+	err := GetDB(ctx, r.db).
+		Joins("JOIN user_social_accounts ON user_social_accounts.user_id = users.id").
+		Where("user_social_accounts.provider = ? AND user_social_accounts.provider_id = ?", provider, providerID).
+		Preload("SocialAccounts").
+		Preload("SpecialCredential").
+		Preload("Devices").
+		Preload("Sessions").
+		First(&user).Error
+	return &user, err
 }
