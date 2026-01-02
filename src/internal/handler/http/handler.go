@@ -10,12 +10,14 @@ import (
 type Handler struct {
 	UserHandler         *handler.UserHandler
 	NotificationHandler *handler.NotificationHandler
+	AuthHandler         *handler.AuthHandler
 }
 
-func NewHandler(userHandler *handler.UserHandler, notificationHandler *handler.NotificationHandler) *Handler {
+func NewHandler(userHandler *handler.UserHandler, notificationHandler *handler.NotificationHandler, authHandler *handler.AuthHandler) *Handler {
 	return &Handler{
 		UserHandler:         userHandler,
 		NotificationHandler: notificationHandler,
+		AuthHandler:         authHandler,
 	}
 }
 

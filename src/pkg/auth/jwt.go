@@ -29,7 +29,7 @@ func (j *JWTService) GenerateToken(userID uuid.UUID, role string) (string, error
 	claims := jwt.MapClaims{
 		"user_id": userID.String(),
 		"role":    role,
-		"exp":     time.Now().Add(time.Hour * 72).Unix(), // 3 days
+		"exp":     time.Now().Add(time.Hour * 72).Unix(),
 		"iss":     j.issuer,
 	}
 

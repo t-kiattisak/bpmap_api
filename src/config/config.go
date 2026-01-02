@@ -16,6 +16,11 @@ type Config struct {
 	DBZone                  string
 	JWTSecret               string
 	FirebaseCredentialsPath string
+	RedisHost               string
+	RedisPort               string
+	RedisPass               string
+	GoogleClientID          string
+	LineChannelID           string
 }
 
 func LoadConfig() *Config {
@@ -36,6 +41,11 @@ func LoadConfig() *Config {
 		DBZone:                  getEnv("DB_ZONE", "Asia/Bangkok"),
 		JWTSecret:               getEnv("JWT_SECRET", "super-secret-key"),
 		FirebaseCredentialsPath: getEnv("FIREBASE_CREDENTIALS_PATH", ""),
+		RedisHost:               getEnv("REDIS_HOST", "localhost"),
+		RedisPort:               getEnv("REDIS_PORT", "6379"),
+		RedisPass:               getEnv("REDIS_PASS", ""),
+		GoogleClientID:          getEnv("GOOGLE_CLIENT_ID", ""),
+		LineChannelID:           getEnv("LINE_CHANNEL_ID", ""),
 	}
 }
 

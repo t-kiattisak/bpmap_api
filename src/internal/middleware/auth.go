@@ -4,12 +4,13 @@ import (
 	"strings"
 
 	"pbmap_api/src/domain"
+	"pbmap_api/src/internal/repository"
 	"pbmap_api/src/pkg/auth"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-func Protected(jwtService *auth.JWTService) fiber.Handler {
+func Protected(jwtService *auth.JWTService, tokenRepo repository.TokenRepository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		authHeader := c.Get("Authorization")
 		if authHeader == "" {
@@ -33,6 +34,15 @@ func Protected(jwtService *auth.JWTService) fiber.Handler {
 			return c.Status(fiber.StatusUnauthorized).JSON(domain.APIResponse{
 				Status:  fiber.StatusUnauthorized,
 				Message: "Invalid or expired token",
+			})
+		}
+
+		ctx := c.Context()
+		storedToken, err := tokenRepo.GetAppToken(ctx, tokenDetails.UserID.String())
+		if err != nil || storedToken != tokenString {
+			return c.Status(fiber.StatusUnauthorized).JSON(domain.APIResponse{
+				Status:  fiber.StatusUnauthorized,
+				Message: "Token has been revoked or expired",
 			})
 		}
 

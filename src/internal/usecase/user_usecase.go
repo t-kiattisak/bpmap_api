@@ -14,6 +14,7 @@ type UserUsecase interface {
 	UpdateUser(ctx context.Context, user *domain.User) error
 	DeleteUser(ctx context.Context, id uuid.UUID) error
 	ListUsers(ctx context.Context) ([]domain.User, error)
+	SyncUserFromSocial(ctx context.Context, provider, providerID string) (*domain.User, error)
 }
 
 type userUsecase struct {
@@ -42,4 +43,27 @@ func (u *userUsecase) DeleteUser(ctx context.Context, id uuid.UUID) error {
 
 func (u *userUsecase) ListUsers(ctx context.Context) ([]domain.User, error) {
 	return u.userRepo.FindAll(ctx)
+}
+
+func (u *userUsecase) SyncUserFromSocial(ctx context.Context, provider, providerID string) (*domain.User, error) {
+	user, err := u.userRepo.FindBySocialID(ctx, provider, providerID)
+	if err == nil {
+		return user, nil
+	}
+
+	newUser := &domain.User{
+		Role: "citizen",
+	}
+	newUser.SocialAccounts = []domain.UserSocialAccount{
+		{
+			Provider:   provider,
+			ProviderID: providerID,
+		},
+	}
+
+	if err := u.userRepo.Create(ctx, newUser); err != nil {
+		return nil, err
+	}
+
+	return newUser, nil
 }
