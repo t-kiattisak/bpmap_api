@@ -26,6 +26,7 @@ func NewServer(cfg *config.Config, handler *Handler, jwtService *auth.JWTService
 	auth := api.Group("/auth")
 	auth.Post("/login", handler.AuthHandler.LoginWithSocial)
 	auth.Post("/logout", middleware.Protected(jwtService, tokenRepo), handler.AuthHandler.Logout)
+	auth.Post("/refresh", handler.AuthHandler.RefreshToken)
 
 	// User routes
 	users := api.Group("/users")
@@ -68,7 +69,9 @@ func Run(cfg *config.Config, db *gorm.DB) {
 
 	jwtService := auth.NewJWTService(cfg.JWTSecret)
 
-	authService := usecase.NewAuthService(userUsecase, tokenRepo, jwtService, cfg)
+	sessionRepo := repository.NewSessionRepository(db)
+
+	authService := usecase.NewAuthService(userUsecase, tokenRepo, sessionRepo, jwtService, cfg)
 	authHandler := handler.NewAuthHandler(authService, v)
 
 	userHandler := handler.NewUserHandler(userUsecase, v, jwtService)
