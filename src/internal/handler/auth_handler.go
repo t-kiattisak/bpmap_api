@@ -7,6 +7,7 @@ import (
 	"pbmap_api/src/pkg/validator"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
 type AuthHandler struct {
@@ -50,5 +51,27 @@ func (h *AuthHandler) LoginWithSocial(c *fiber.Ctx) error {
 		Status:  fiber.StatusOK,
 		Message: "Login successfully",
 		Data:    resp,
+	})
+}
+
+func (h *AuthHandler) Logout(c *fiber.Ctx) error {
+	userID, ok := c.Locals("user_id").(uuid.UUID)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(domain.APIResponse{
+			Status:  fiber.StatusUnauthorized,
+			Message: "Unauthorized",
+		})
+	}
+
+	if err := h.authService.Logout(c.Context(), userID); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(domain.APIResponse{
+			Status:  fiber.StatusInternalServerError,
+			Message: err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(domain.APIResponse{
+		Status:  fiber.StatusOK,
+		Message: "Logout successfully",
 	})
 }
