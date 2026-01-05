@@ -50,9 +50,19 @@ func (s *fcmService) BroadcastNotification(ctx context.Context, title, body stri
 	topic := "all_devices"
 
 	message := &messaging.Message{
+		Data: map[string]string{
+			"type": "notification",
+		},
 		Notification: &messaging.Notification{
 			Title: title,
 			Body:  body,
+		},
+		Android: &messaging.AndroidConfig{
+			Priority: "high",
+			Notification: &messaging.AndroidNotification{
+				Sound:     "default",
+				ChannelID: "high_importance_channel",
+			},
 		},
 		Topic: topic,
 	}
