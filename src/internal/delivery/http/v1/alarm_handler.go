@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"pbmap_api/src/internal/domain/entities"
 	"pbmap_api/src/internal/dto"
 	"pbmap_api/src/internal/usecase"
 	"pbmap_api/src/pkg/validator"
@@ -24,14 +23,14 @@ func NewAlarmHandler(alarmUsecase usecase.AlarmUsecase, v *validator.Wrapper) *A
 func (h *AlarmHandler) Alarm(c *fiber.Ctx) error {
 	var req dto.AlarmDispatchRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(entities.APIResponse{
+		return c.Status(fiber.StatusBadRequest).JSON(dto.APIResponse{
 			Status:  fiber.StatusBadRequest,
 			Message: err.Error(),
 		})
 	}
 
 	if errors := h.validator.Validate(req); len(errors) > 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(entities.APIResponse{
+		return c.Status(fiber.StatusBadRequest).JSON(dto.APIResponse{
 			Status:  fiber.StatusBadRequest,
 			Message: "Validation failed",
 			Data:    errors,
@@ -47,13 +46,13 @@ func (h *AlarmHandler) Alarm(c *fiber.Ctx) error {
 	}
 
 	if err := h.alarmUsecase.DispatchAlarm(c.Context(), payload); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(entities.APIResponse{
+		return c.Status(fiber.StatusInternalServerError).JSON(dto.APIResponse{
 			Status:  fiber.StatusInternalServerError,
 			Message: err.Error(),
 		})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(entities.APIResponse{
+	return c.Status(fiber.StatusOK).JSON(dto.APIResponse{
 		Status:  fiber.StatusOK,
 		Message: "Alarm dispatched successfully",
 		Data:    map[string]string{"alarm_id": req.AlarmID},

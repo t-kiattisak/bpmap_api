@@ -27,14 +27,14 @@ func NewUserHandler(usecase usecase.UserUsecase, v *validator.Wrapper, jwtServic
 func (h *UserHandler) Create(c *fiber.Ctx) error {
 	var req dto.CreateUserRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(entities.APIResponse{
+		return c.Status(fiber.StatusBadRequest).JSON(dto.APIResponse{
 			Status:  fiber.StatusBadRequest,
 			Message: err.Error(),
 		})
 	}
 
 	if errors := h.validator.Validate(req); len(errors) > 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(entities.APIResponse{
+		return c.Status(fiber.StatusBadRequest).JSON(dto.APIResponse{
 			Status:  fiber.StatusBadRequest,
 			Message: "Validation failed",
 			Data:    errors,
@@ -48,13 +48,13 @@ func (h *UserHandler) Create(c *fiber.Ctx) error {
 	}
 
 	if err := h.usecase.CreateUser(c.Context(), &user); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(entities.APIResponse{
+		return c.Status(fiber.StatusInternalServerError).JSON(dto.APIResponse{
 			Status:  fiber.StatusInternalServerError,
 			Message: err.Error(),
 		})
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(entities.APIResponse{
+	return c.Status(fiber.StatusCreated).JSON(dto.APIResponse{
 		Status:  fiber.StatusCreated,
 		Message: "User created successfully",
 		Data:    user,
@@ -65,7 +65,7 @@ func (h *UserHandler) Create(c *fiber.Ctx) error {
 func (h *UserHandler) Get(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(entities.APIResponse{
+		return c.Status(fiber.StatusBadRequest).JSON(dto.APIResponse{
 			Status:  fiber.StatusBadRequest,
 			Message: "Invalid ID format",
 		})
@@ -73,13 +73,13 @@ func (h *UserHandler) Get(c *fiber.Ctx) error {
 
 	user, err := h.usecase.GetUser(c.Context(), id)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(entities.APIResponse{
+		return c.Status(fiber.StatusNotFound).JSON(dto.APIResponse{
 			Status:  fiber.StatusNotFound,
 			Message: "User not found",
 		})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(entities.APIResponse{
+	return c.Status(fiber.StatusOK).JSON(dto.APIResponse{
 		Status:  fiber.StatusOK,
 		Message: "User retrieved successfully",
 		Data:    user,
@@ -90,7 +90,7 @@ func (h *UserHandler) Get(c *fiber.Ctx) error {
 func (h *UserHandler) Update(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(entities.APIResponse{
+		return c.Status(fiber.StatusBadRequest).JSON(dto.APIResponse{
 			Status:  fiber.StatusBadRequest,
 			Message: "Invalid ID format",
 		})
@@ -98,7 +98,7 @@ func (h *UserHandler) Update(c *fiber.Ctx) error {
 
 	var user entities.User
 	if err := c.BodyParser(&user); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(entities.APIResponse{
+		return c.Status(fiber.StatusBadRequest).JSON(dto.APIResponse{
 			Status:  fiber.StatusBadRequest,
 			Message: err.Error(),
 		})
@@ -106,13 +106,13 @@ func (h *UserHandler) Update(c *fiber.Ctx) error {
 
 	user.ID = id
 	if err := h.usecase.UpdateUser(c.Context(), &user); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(entities.APIResponse{
+		return c.Status(fiber.StatusInternalServerError).JSON(dto.APIResponse{
 			Status:  fiber.StatusInternalServerError,
 			Message: err.Error(),
 		})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(entities.APIResponse{
+	return c.Status(fiber.StatusOK).JSON(dto.APIResponse{
 		Status:  fiber.StatusOK,
 		Message: "User updated successfully",
 		Data:    user,
@@ -123,20 +123,20 @@ func (h *UserHandler) Update(c *fiber.Ctx) error {
 func (h *UserHandler) Delete(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(entities.APIResponse{
+		return c.Status(fiber.StatusBadRequest).JSON(dto.APIResponse{
 			Status:  fiber.StatusBadRequest,
 			Message: "Invalid ID format",
 		})
 	}
 
 	if err := h.usecase.DeleteUser(c.Context(), id); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(entities.APIResponse{
+		return c.Status(fiber.StatusInternalServerError).JSON(dto.APIResponse{
 			Status:  fiber.StatusInternalServerError,
 			Message: err.Error(),
 		})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(entities.APIResponse{
+	return c.Status(fiber.StatusOK).JSON(dto.APIResponse{
 		Status:  fiber.StatusOK,
 		Message: "User deleted successfully",
 	})
@@ -146,13 +146,13 @@ func (h *UserHandler) Delete(c *fiber.Ctx) error {
 func (h *UserHandler) List(c *fiber.Ctx) error {
 	users, err := h.usecase.ListUsers(c.Context())
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(entities.APIResponse{
+		return c.Status(fiber.StatusInternalServerError).JSON(dto.APIResponse{
 			Status:  fiber.StatusInternalServerError,
 			Message: err.Error(),
 		})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(entities.APIResponse{
+	return c.Status(fiber.StatusOK).JSON(dto.APIResponse{
 		Status:  fiber.StatusOK,
 		Message: "Users retrieved successfully",
 		Data:    users,
@@ -163,7 +163,7 @@ func (h *UserHandler) List(c *fiber.Ctx) error {
 func (h *UserHandler) Me(c *fiber.Ctx) error {
 	userID, ok := c.Locals("user_id").(uuid.UUID)
 	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(entities.APIResponse{
+		return c.Status(fiber.StatusUnauthorized).JSON(dto.APIResponse{
 			Status:  fiber.StatusUnauthorized,
 			Message: "Unauthorized",
 		})
@@ -171,13 +171,13 @@ func (h *UserHandler) Me(c *fiber.Ctx) error {
 
 	user, err := h.usecase.GetUser(c.Context(), userID)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(entities.APIResponse{
+		return c.Status(fiber.StatusNotFound).JSON(dto.APIResponse{
 			Status:  fiber.StatusNotFound,
 			Message: "User not found",
 		})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(entities.APIResponse{
+	return c.Status(fiber.StatusOK).JSON(dto.APIResponse{
 		Status:  fiber.StatusOK,
 		Message: "Current user retrieved successfully",
 		Data:    user,

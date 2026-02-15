@@ -3,8 +3,8 @@ package middleware
 import (
 	"strings"
 
-	"pbmap_api/src/internal/domain/entities"
 	"pbmap_api/src/internal/domain/repositories"
+	"pbmap_api/src/internal/dto"
 	"pbmap_api/src/pkg/auth"
 
 	"github.com/gofiber/fiber/v2"
@@ -14,7 +14,7 @@ func Protected(jwtService *auth.JWTService, tokenRepo repositories.TokenReposito
 	return func(c *fiber.Ctx) error {
 		authHeader := c.Get("Authorization")
 		if authHeader == "" {
-			return c.Status(fiber.StatusUnauthorized).JSON(entities.APIResponse{
+			return c.Status(fiber.StatusUnauthorized).JSON(dto.APIResponse{
 				Status:  fiber.StatusUnauthorized,
 				Message: "Missing authorization header",
 			})
@@ -22,7 +22,7 @@ func Protected(jwtService *auth.JWTService, tokenRepo repositories.TokenReposito
 
 		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			return c.Status(fiber.StatusUnauthorized).JSON(entities.APIResponse{
+			return c.Status(fiber.StatusUnauthorized).JSON(dto.APIResponse{
 				Status:  fiber.StatusUnauthorized,
 				Message: "Invalid authorization format",
 			})
@@ -31,7 +31,7 @@ func Protected(jwtService *auth.JWTService, tokenRepo repositories.TokenReposito
 		tokenString := parts[1]
 		tokenDetails, err := jwtService.ValidateToken(tokenString)
 		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).JSON(entities.APIResponse{
+			return c.Status(fiber.StatusUnauthorized).JSON(dto.APIResponse{
 				Status:  fiber.StatusUnauthorized,
 				Message: "Invalid or expired token",
 			})
@@ -40,7 +40,7 @@ func Protected(jwtService *auth.JWTService, tokenRepo repositories.TokenReposito
 		ctx := c.Context()
 		storedToken, err := tokenRepo.GetAppToken(ctx, tokenDetails.UserID.String())
 		if err != nil || storedToken != tokenString {
-			return c.Status(fiber.StatusUnauthorized).JSON(entities.APIResponse{
+			return c.Status(fiber.StatusUnauthorized).JSON(dto.APIResponse{
 				Status:  fiber.StatusUnauthorized,
 				Message: "Token has been revoked or expired",
 			})

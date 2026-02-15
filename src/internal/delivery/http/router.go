@@ -3,14 +3,13 @@ package http
 import (
 	"pbmap_api/src/internal/delivery/http/middleware"
 	v1 "pbmap_api/src/internal/delivery/http/v1"
-	"pbmap_api/src/internal/domain/entities"
 	"pbmap_api/src/internal/domain/repositories"
+	"pbmap_api/src/internal/dto"
 	"pbmap_api/src/pkg/auth"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-// Handlers holds all v1 HTTP handlers.
 type Handlers struct {
 	Alarm          *v1.AlarmHandler
 	Auth           *v1.AuthHandler
@@ -19,9 +18,20 @@ type Handlers struct {
 	PotentialPoint *v1.PotentialPointHandler
 }
 
-// Router registers all routes and returns the Fiber app.
 func Router(h *Handlers, jwtService *auth.JWTService, tokenRepo repositories.TokenRepository) *fiber.App {
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		ErrorHandler: func(c *fiber.Ctx, err error) error {
+			code := fiber.StatusInternalServerError
+			if e, ok := err.(*fiber.Error); ok {
+				code = e.Code
+			}
+			return c.Status(code).JSON(dto.APIResponse{
+				Status:  code,
+				Success: false,
+				Message: err.Error(),
+			})
+		},
+	})
 
 	api := app.Group("/api")
 	api.Get("/health", healthCheck)
@@ -59,7 +69,7 @@ func Router(h *Handlers, jwtService *auth.JWTService, tokenRepo repositories.Tok
 }
 
 func healthCheck(c *fiber.Ctx) error {
-	return c.Status(fiber.StatusOK).JSON(entities.APIResponse{
+	return c.Status(fiber.StatusOK).JSON(dto.APIResponse{
 		Status:  fiber.StatusOK,
 		Message: "OK",
 	})
