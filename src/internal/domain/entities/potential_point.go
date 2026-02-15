@@ -8,17 +8,16 @@ import (
 )
 
 type PotentialPoint struct {
-	ID          uuid.UUID      `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
-	Name        string         `json:"name"`
-	Type        string         `json:"type"`
-	Latitude    float64        `json:"latitude"`
-	Longitude   float64        `json:"longitude"`
-	CreatedYear int            `json:"created_year"`
-	CreatedBy   uuid.UUID      `json:"created_by"`
-	Properties  datatypes.JSON `json:"properties"` // GORM compatible JSON type
+	ID         uuid.UUID      `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	Name       string         `gorm:"type:varchar(255);not null"`
+	Type       string         `gorm:"type:varchar(50);not null"`
+	Latitude   float64        `gorm:"type:decimal(10,8);not null"`
+	Longitude  float64        `gorm:"type:decimal(11,8);not null"`
+	CreatedBy  uuid.UUID      `gorm:"type:uuid;not null"`
+	Properties datatypes.JSON `gorm:"type:jsonb"`
 
-	Creator   *User      `gorm:"foreignKey:CreatedBy" json:"creator,omitempty"`
-	CreatedAt time.Time  `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt time.Time  `gorm:"autoUpdateTime" json:"updated_at"`
-	DeletedAt *time.Time `gorm:"index" json:"deleted_at,omitempty"`
+	Creator   *User      `gorm:"foreignKey:CreatedBy"`
+	CreatedAt time.Time  `gorm:"autoCreateTime"`
+	UpdatedAt time.Time  `gorm:"autoUpdateTime"`
+	DeletedAt *time.Time `gorm:"index"`
 }

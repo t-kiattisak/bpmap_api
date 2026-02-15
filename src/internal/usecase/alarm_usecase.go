@@ -3,13 +3,13 @@ package usecase
 import (
 	"context"
 
-	"pbmap_api/src/internal/domain/entities"
 	"pbmap_api/src/internal/domain/repositories"
+	"pbmap_api/src/internal/dto"
 )
 
 // AlarmUsecase orchestrates alarm dispatch.
 type AlarmUsecase interface {
-	DispatchAlarm(ctx context.Context, req *entities.AlarmDispatchRequest) error
+	DispatchAlarm(ctx context.Context, req *dto.AlarmDispatchRequest) error
 }
 
 type alarmUsecase struct {
@@ -21,6 +21,6 @@ func NewAlarmUsecase(fcm repositories.FCMRepository) AlarmUsecase {
 	return &alarmUsecase{fcm: fcm}
 }
 
-func (u *alarmUsecase) DispatchAlarm(ctx context.Context, req *entities.AlarmDispatchRequest) error {
+func (u *alarmUsecase) DispatchAlarm(ctx context.Context, req *dto.AlarmDispatchRequest) error {
 	return u.fcm.SendAlarm(ctx, req)
 }

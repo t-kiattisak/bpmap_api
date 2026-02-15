@@ -23,6 +23,23 @@ func NewPotentialPointHandler(usecase usecase.PotentialPointUsecase, v *validato
 	}
 }
 
+// Helper to convert Entity -> DTO
+func toResponseDTO(pp *entities.PotentialPoint) dto.PotentialPointResponse {
+	return dto.PotentialPointResponse{
+		ID:   pp.ID,
+		Name: pp.Name,
+		Type: pp.Type,
+		Location: dto.Location{
+			Latitude:  pp.Latitude,
+			Longitude: pp.Longitude,
+		},
+		Properties: pp.Properties,
+		CreatorID:  &pp.CreatedBy,
+		CreatedAt:  pp.CreatedAt,
+		UpdatedAt:  pp.UpdatedAt,
+	}
+}
+
 // Create handles POST /api/v1/potential-points
 func (h *PotentialPointHandler) Create(c *fiber.Ctx) error {
 	var req dto.CreatePotentialPointInput
@@ -57,7 +74,7 @@ func (h *PotentialPointHandler) Create(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(entities.APIResponse{
 		Status:  fiber.StatusCreated,
 		Message: "Potential point created successfully",
-		Data:    pp,
+		Data:    toResponseDTO(pp),
 	})
 }
 
@@ -82,7 +99,7 @@ func (h *PotentialPointHandler) Get(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(entities.APIResponse{
 		Status:  fiber.StatusOK,
 		Message: "Potential point retrieved successfully",
-		Data:    pp,
+		Data:    toResponseDTO(pp),
 	})
 }
 
@@ -115,7 +132,7 @@ func (h *PotentialPointHandler) Update(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(entities.APIResponse{
 		Status:  fiber.StatusOK,
 		Message: "Potential point updated successfully",
-		Data:    pp,
+		Data:    toResponseDTO(pp),
 	})
 }
 
@@ -152,9 +169,14 @@ func (h *PotentialPointHandler) List(c *fiber.Ctx) error {
 		})
 	}
 
+	var response []dto.PotentialPointResponse
+	for _, pp := range pps {
+		response = append(response, toResponseDTO(&pp))
+	}
+
 	return c.Status(fiber.StatusOK).JSON(entities.APIResponse{
 		Status:  fiber.StatusOK,
 		Message: "Potential points retrieved successfully",
-		Data:    pps,
+		Data:    response,
 	})
 }

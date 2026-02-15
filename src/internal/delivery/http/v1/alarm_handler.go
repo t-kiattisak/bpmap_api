@@ -38,10 +38,10 @@ func (h *AlarmHandler) Alarm(c *fiber.Ctx) error {
 		})
 	}
 
-	payload := &entities.AlarmDispatchRequest{
+	payload := &dto.AlarmDispatchRequest{
 		AlarmID: req.AlarmID,
 		Urgency: req.Urgency,
-		Center:  entities.AlarmCenter{Lat: req.Center.Lat, Lng: req.Center.Lng, Radius: req.Center.Radius},
+		Center:  dto.AlarmCenter{Lat: req.Center.Lat, Lng: req.Center.Lng, Radius: req.Center.Radius},
 		Signal:  req.Signal,
 		Content: req.Content,
 	}
