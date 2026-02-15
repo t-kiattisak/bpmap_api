@@ -1,19 +1,12 @@
 package worker
 
 import (
-	"pbmap_api/src/config"
-	"pbmap_api/src/internal/scheduler"
-	"pbmap_api/src/internal/usecase"
+	"pbmap_api/src/pkg/config"
 )
 
+// StartBackgroundJobs starts background jobs. Returns a cleanup function.
+// Adapter/data_sync were removed; add new jobs here when needed.
 func StartBackgroundJobs(cfg *config.Config) func() {
-	fcmService, _ := usecase.NewFCMService(cfg)
-	dataSyncService := usecase.NewDataSyncService(fcmService)
-
-	appScheduler := scheduler.NewScheduler(dataSyncService)
-	appScheduler.Start()
-
-	return func() {
-		appScheduler.Stop()
-	}
+	_ = cfg
+	return func() {}
 }

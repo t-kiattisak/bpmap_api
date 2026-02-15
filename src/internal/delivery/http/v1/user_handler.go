@@ -1,7 +1,7 @@
-package handler
+package v1
 
 import (
-	"pbmap_api/src/domain"
+	"pbmap_api/src/internal/domain/entities"
 	"pbmap_api/src/internal/dto"
 	"pbmap_api/src/internal/usecase"
 	"pbmap_api/src/pkg/auth"
@@ -11,169 +11,173 @@ import (
 	"github.com/google/uuid"
 )
 
+// UserHandler handles user CRUD.
 type UserHandler struct {
 	usecase    usecase.UserUsecase
 	validator  *validator.Wrapper
 	jwtService *auth.JWTService
 }
 
+// NewUserHandler creates the user HTTP handler.
 func NewUserHandler(usecase usecase.UserUsecase, v *validator.Wrapper, jwtService *auth.JWTService) *UserHandler {
-	return &UserHandler{
-		usecase:    usecase,
-		validator:  v,
-		jwtService: jwtService,
-	}
+	return &UserHandler{usecase: usecase, validator: v, jwtService: jwtService}
 }
 
+// Create handles POST /api/users.
 func (h *UserHandler) Create(c *fiber.Ctx) error {
 	var req dto.CreateUserRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(domain.APIResponse{
+		return c.Status(fiber.StatusBadRequest).JSON(entities.APIResponse{
 			Status:  fiber.StatusBadRequest,
 			Message: err.Error(),
 		})
 	}
 
 	if errors := h.validator.Validate(req); len(errors) > 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(domain.APIResponse{
+		return c.Status(fiber.StatusBadRequest).JSON(entities.APIResponse{
 			Status:  fiber.StatusBadRequest,
 			Message: "Validation failed",
 			Data:    errors,
 		})
 	}
 
-	user := domain.User{
+	user := entities.User{
 		Email:       &req.Email,
 		DisplayName: req.DisplayName,
 		Role:        req.Role,
 	}
 
-	if err := h.usecase.CreateUser(c.UserContext(), &user); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(domain.APIResponse{
+	if err := h.usecase.CreateUser(c.Context(), &user); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(entities.APIResponse{
 			Status:  fiber.StatusInternalServerError,
 			Message: err.Error(),
 		})
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(domain.APIResponse{
+	return c.Status(fiber.StatusCreated).JSON(entities.APIResponse{
 		Status:  fiber.StatusCreated,
 		Message: "User created successfully",
 		Data:    user,
 	})
 }
 
+// Get handles GET /api/users/:id.
 func (h *UserHandler) Get(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(domain.APIResponse{
+		return c.Status(fiber.StatusBadRequest).JSON(entities.APIResponse{
 			Status:  fiber.StatusBadRequest,
 			Message: "Invalid ID format",
 		})
 	}
 
-	user, err := h.usecase.GetUser(c.UserContext(), id)
+	user, err := h.usecase.GetUser(c.Context(), id)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(domain.APIResponse{
+		return c.Status(fiber.StatusNotFound).JSON(entities.APIResponse{
 			Status:  fiber.StatusNotFound,
 			Message: "User not found",
 		})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(domain.APIResponse{
+	return c.Status(fiber.StatusOK).JSON(entities.APIResponse{
 		Status:  fiber.StatusOK,
 		Message: "User retrieved successfully",
 		Data:    user,
 	})
 }
 
+// Update handles PUT /api/users/:id.
 func (h *UserHandler) Update(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(domain.APIResponse{
+		return c.Status(fiber.StatusBadRequest).JSON(entities.APIResponse{
 			Status:  fiber.StatusBadRequest,
 			Message: "Invalid ID format",
 		})
 	}
 
-	var user domain.User
+	var user entities.User
 	if err := c.BodyParser(&user); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(domain.APIResponse{
+		return c.Status(fiber.StatusBadRequest).JSON(entities.APIResponse{
 			Status:  fiber.StatusBadRequest,
 			Message: err.Error(),
 		})
 	}
 
 	user.ID = id
-	if err := h.usecase.UpdateUser(c.UserContext(), &user); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(domain.APIResponse{
+	if err := h.usecase.UpdateUser(c.Context(), &user); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(entities.APIResponse{
 			Status:  fiber.StatusInternalServerError,
 			Message: err.Error(),
 		})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(domain.APIResponse{
+	return c.Status(fiber.StatusOK).JSON(entities.APIResponse{
 		Status:  fiber.StatusOK,
 		Message: "User updated successfully",
 		Data:    user,
 	})
 }
 
+// Delete handles DELETE /api/users/:id.
 func (h *UserHandler) Delete(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(domain.APIResponse{
+		return c.Status(fiber.StatusBadRequest).JSON(entities.APIResponse{
 			Status:  fiber.StatusBadRequest,
 			Message: "Invalid ID format",
 		})
 	}
 
-	if err := h.usecase.DeleteUser(c.UserContext(), id); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(domain.APIResponse{
+	if err := h.usecase.DeleteUser(c.Context(), id); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(entities.APIResponse{
 			Status:  fiber.StatusInternalServerError,
 			Message: err.Error(),
 		})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(domain.APIResponse{
+	return c.Status(fiber.StatusOK).JSON(entities.APIResponse{
 		Status:  fiber.StatusOK,
 		Message: "User deleted successfully",
 	})
 }
 
+// List handles GET /api/users.
 func (h *UserHandler) List(c *fiber.Ctx) error {
-	users, err := h.usecase.ListUsers(c.UserContext())
+	users, err := h.usecase.ListUsers(c.Context())
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(domain.APIResponse{
+		return c.Status(fiber.StatusInternalServerError).JSON(entities.APIResponse{
 			Status:  fiber.StatusInternalServerError,
 			Message: err.Error(),
 		})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(domain.APIResponse{
+	return c.Status(fiber.StatusOK).JSON(entities.APIResponse{
 		Status:  fiber.StatusOK,
 		Message: "Users retrieved successfully",
 		Data:    users,
 	})
 }
 
+// Me handles GET /api/users/me.
 func (h *UserHandler) Me(c *fiber.Ctx) error {
 	userID, ok := c.Locals("user_id").(uuid.UUID)
 	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(domain.APIResponse{
+		return c.Status(fiber.StatusUnauthorized).JSON(entities.APIResponse{
 			Status:  fiber.StatusUnauthorized,
 			Message: "Unauthorized",
 		})
 	}
 
-	user, err := h.usecase.GetUser(c.UserContext(), userID)
+	user, err := h.usecase.GetUser(c.Context(), userID)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(domain.APIResponse{
+		return c.Status(fiber.StatusNotFound).JSON(entities.APIResponse{
 			Status:  fiber.StatusNotFound,
 			Message: "User not found",
 		})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(domain.APIResponse{
+	return c.Status(fiber.StatusOK).JSON(entities.APIResponse{
 		Status:  fiber.StatusOK,
 		Message: "Current user retrieved successfully",
 		Data:    user,
