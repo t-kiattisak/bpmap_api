@@ -57,7 +57,7 @@ func (h *PotentialPointHandler) Create(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(entities.APIResponse{
 		Status:  fiber.StatusCreated,
 		Message: "Potential point created successfully",
-		Data:    pp,
+		Data:    dto.ToPotentialPointResponse(pp),
 	})
 }
 
@@ -82,7 +82,7 @@ func (h *PotentialPointHandler) Get(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(entities.APIResponse{
 		Status:  fiber.StatusOK,
 		Message: "Potential point retrieved successfully",
-		Data:    pp,
+		Data:    dto.ToPotentialPointResponse(pp),
 	})
 }
 
@@ -115,7 +115,7 @@ func (h *PotentialPointHandler) Update(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(entities.APIResponse{
 		Status:  fiber.StatusOK,
 		Message: "Potential point updated successfully",
-		Data:    pp,
+		Data:    dto.ToPotentialPointResponse(pp),
 	})
 }
 
@@ -152,9 +152,14 @@ func (h *PotentialPointHandler) List(c *fiber.Ctx) error {
 		})
 	}
 
+	var response []dto.PotentialPointResponse
+	for _, pp := range pps {
+		response = append(response, dto.ToPotentialPointResponse(&pp))
+	}
+
 	return c.Status(fiber.StatusOK).JSON(entities.APIResponse{
 		Status:  fiber.StatusOK,
 		Message: "Potential points retrieved successfully",
-		Data:    pps,
+		Data:    response,
 	})
 }

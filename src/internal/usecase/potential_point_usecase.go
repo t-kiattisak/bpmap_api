@@ -28,20 +28,15 @@ func NewPotentialPointUsecase(repo repositories.PotentialPointRepository) Potent
 
 func (u *potentialPointUsecase) Create(ctx context.Context, input dto.CreatePotentialPointInput, creatorID *uuid.UUID) (*entities.PotentialPoint, error) {
 	pp := &entities.PotentialPoint{
-		Name:        input.Name,
-		Type:        input.Type,
-		Latitude:    input.Latitude,
-		Longitude:   input.Longitude,
-		CreatedYear: input.CreatedYear,
-		Properties:  datatypes.JSON(input.Properties),
+		Name:       input.Name,
+		Type:       input.Type,
+		Latitude:   input.Latitude,
+		Longitude:  input.Longitude,
+		Properties: datatypes.JSON(input.Properties),
 	}
 
 	if creatorID != nil {
 		pp.CreatedBy = *creatorID
-	} else if input.CreatedBy != "" {
-		if id, err := uuid.Parse(input.CreatedBy); err == nil {
-			pp.CreatedBy = id
-		}
 	}
 
 	if err := u.repo.Create(ctx, pp); err != nil {
@@ -72,9 +67,6 @@ func (u *potentialPointUsecase) Update(ctx context.Context, id uuid.UUID, input 
 	}
 	if input.Longitude != nil {
 		pp.Longitude = *input.Longitude
-	}
-	if input.CreatedYear != nil {
-		pp.CreatedYear = *input.CreatedYear
 	}
 	if input.Properties != nil {
 		pp.Properties = datatypes.JSON(input.Properties)
