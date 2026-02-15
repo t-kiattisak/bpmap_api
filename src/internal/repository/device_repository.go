@@ -2,7 +2,7 @@ package repository
 
 import (
 	"context"
-	"pbmap_api/src/domain"
+	"pbmap_api/src/internal/domain"
 	"time"
 
 	"github.com/google/uuid"

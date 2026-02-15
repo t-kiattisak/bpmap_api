@@ -3,7 +3,7 @@ package redis
 import (
 	"context"
 	"fmt"
-	"pbmap_api/src/config"
+	"pbmap_api/src/pkg/config"
 
 	"github.com/redis/go-redis/v9"
 )

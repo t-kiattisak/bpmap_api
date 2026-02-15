@@ -3,7 +3,7 @@ package middleware
 import (
 	"strings"
 
-	"pbmap_api/src/domain"
+	"pbmap_api/src/internal/domain"
 	"pbmap_api/src/internal/repository"
 	"pbmap_api/src/pkg/auth"
 

@@ -1,7 +1,7 @@
-package handler
+package v1
 
 import (
-	"pbmap_api/src/domain"
+	"pbmap_api/src/internal/domain"
 	"pbmap_api/src/internal/dto"
 	"pbmap_api/src/internal/usecase"
 	"pbmap_api/src/pkg/auth"
@@ -11,20 +11,19 @@ import (
 	"github.com/google/uuid"
 )
 
+// UserHandler handles user CRUD.
 type UserHandler struct {
 	usecase    usecase.UserUsecase
 	validator  *validator.Wrapper
 	jwtService *auth.JWTService
 }
 
+// NewUserHandler creates the user HTTP handler.
 func NewUserHandler(usecase usecase.UserUsecase, v *validator.Wrapper, jwtService *auth.JWTService) *UserHandler {
-	return &UserHandler{
-		usecase:    usecase,
-		validator:  v,
-		jwtService: jwtService,
-	}
+	return &UserHandler{usecase: usecase, validator: v, jwtService: jwtService}
 }
 
+// Create handles POST /api/users.
 func (h *UserHandler) Create(c *fiber.Ctx) error {
 	var req dto.CreateUserRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -48,7 +47,7 @@ func (h *UserHandler) Create(c *fiber.Ctx) error {
 		Role:        req.Role,
 	}
 
-	if err := h.usecase.CreateUser(c.UserContext(), &user); err != nil {
+	if err := h.usecase.CreateUser(c.Context(), &user); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(domain.APIResponse{
 			Status:  fiber.StatusInternalServerError,
 			Message: err.Error(),
@@ -62,6 +61,7 @@ func (h *UserHandler) Create(c *fiber.Ctx) error {
 	})
 }
 
+// Get handles GET /api/users/:id.
 func (h *UserHandler) Get(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -71,7 +71,7 @@ func (h *UserHandler) Get(c *fiber.Ctx) error {
 		})
 	}
 
-	user, err := h.usecase.GetUser(c.UserContext(), id)
+	user, err := h.usecase.GetUser(c.Context(), id)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(domain.APIResponse{
 			Status:  fiber.StatusNotFound,
@@ -86,6 +86,7 @@ func (h *UserHandler) Get(c *fiber.Ctx) error {
 	})
 }
 
+// Update handles PUT /api/users/:id.
 func (h *UserHandler) Update(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -104,7 +105,7 @@ func (h *UserHandler) Update(c *fiber.Ctx) error {
 	}
 
 	user.ID = id
-	if err := h.usecase.UpdateUser(c.UserContext(), &user); err != nil {
+	if err := h.usecase.UpdateUser(c.Context(), &user); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(domain.APIResponse{
 			Status:  fiber.StatusInternalServerError,
 			Message: err.Error(),
@@ -118,6 +119,7 @@ func (h *UserHandler) Update(c *fiber.Ctx) error {
 	})
 }
 
+// Delete handles DELETE /api/users/:id.
 func (h *UserHandler) Delete(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -127,7 +129,7 @@ func (h *UserHandler) Delete(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := h.usecase.DeleteUser(c.UserContext(), id); err != nil {
+	if err := h.usecase.DeleteUser(c.Context(), id); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(domain.APIResponse{
 			Status:  fiber.StatusInternalServerError,
 			Message: err.Error(),
@@ -140,8 +142,9 @@ func (h *UserHandler) Delete(c *fiber.Ctx) error {
 	})
 }
 
+// List handles GET /api/users.
 func (h *UserHandler) List(c *fiber.Ctx) error {
-	users, err := h.usecase.ListUsers(c.UserContext())
+	users, err := h.usecase.ListUsers(c.Context())
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(domain.APIResponse{
 			Status:  fiber.StatusInternalServerError,
@@ -156,6 +159,7 @@ func (h *UserHandler) List(c *fiber.Ctx) error {
 	})
 }
 
+// Me handles GET /api/users/me.
 func (h *UserHandler) Me(c *fiber.Ctx) error {
 	userID, ok := c.Locals("user_id").(uuid.UUID)
 	if !ok {
@@ -165,7 +169,7 @@ func (h *UserHandler) Me(c *fiber.Ctx) error {
 		})
 	}
 
-	user, err := h.usecase.GetUser(c.UserContext(), userID)
+	user, err := h.usecase.GetUser(c.Context(), userID)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(domain.APIResponse{
 			Status:  fiber.StatusNotFound,

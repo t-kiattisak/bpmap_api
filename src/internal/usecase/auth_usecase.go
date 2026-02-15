@@ -9,11 +9,11 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"pbmap_api/src/config"
-	"pbmap_api/src/domain"
+	"pbmap_api/src/internal/domain"
 	"pbmap_api/src/internal/dto"
 	"pbmap_api/src/internal/repository"
 	"pbmap_api/src/pkg/auth"
+	"pbmap_api/src/pkg/config"
 	"time"
 
 	"github.com/google/uuid"

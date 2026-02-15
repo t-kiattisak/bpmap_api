@@ -1,7 +1,7 @@
-package handler
+package v1
 
 import (
-	"pbmap_api/src/domain"
+	"pbmap_api/src/internal/domain"
 	"pbmap_api/src/internal/dto"
 	"pbmap_api/src/internal/usecase"
 	"pbmap_api/src/pkg/validator"
@@ -10,18 +10,18 @@ import (
 	"github.com/google/uuid"
 )
 
+// AuthHandler handles auth endpoints.
 type AuthHandler struct {
-	authService usecase.AuthService
+	authUsecase usecase.AuthService
 	validator   *validator.Wrapper
 }
 
-func NewAuthHandler(authService usecase.AuthService, v *validator.Wrapper) *AuthHandler {
-	return &AuthHandler{
-		authService: authService,
-		validator:   v,
-	}
+// NewAuthHandler creates the auth HTTP handler.
+func NewAuthHandler(authUsecase usecase.AuthService, v *validator.Wrapper) *AuthHandler {
+	return &AuthHandler{authUsecase: authUsecase, validator: v}
 }
 
+// LoginWithSocial handles POST /api/auth/login.
 func (h *AuthHandler) LoginWithSocial(c *fiber.Ctx) error {
 	var req dto.SocialLoginRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -39,7 +39,7 @@ func (h *AuthHandler) LoginWithSocial(c *fiber.Ctx) error {
 		})
 	}
 
-	resp, err := h.authService.LoginWithSocial(c.Context(), &req)
+	resp, err := h.authUsecase.LoginWithSocial(c.Context(), &req)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(domain.APIResponse{
 			Status:  fiber.StatusUnauthorized,
@@ -54,6 +54,7 @@ func (h *AuthHandler) LoginWithSocial(c *fiber.Ctx) error {
 	})
 }
 
+// Logout handles POST /api/auth/logout.
 func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 	userID, ok := c.Locals("user_id").(uuid.UUID)
 	if !ok {
@@ -63,7 +64,7 @@ func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := h.authService.Logout(c.Context(), userID); err != nil {
+	if err := h.authUsecase.Logout(c.Context(), userID); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(domain.APIResponse{
 			Status:  fiber.StatusInternalServerError,
 			Message: err.Error(),
@@ -76,6 +77,7 @@ func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 	})
 }
 
+// RefreshToken handles POST /api/auth/refresh.
 func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
 	var req dto.RefreshTokenRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -93,15 +95,12 @@ func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
 		})
 	}
 
-	resp, err := h.authService.RefreshToken(c.Context(), &req)
+	resp, err := h.authUsecase.RefreshToken(c.Context(), &req)
 	if err != nil {
 		status := fiber.StatusUnauthorized
-		if err.Error() == "refresh token expired" || err.Error() == "invalid refresh token" {
-			status = fiber.StatusUnauthorized
-		} else {
+		if err.Error() != "refresh token expired" && err.Error() != "invalid refresh token" {
 			status = fiber.StatusInternalServerError
 		}
-
 		return c.Status(status).JSON(domain.APIResponse{
 			Status:  status,
 			Message: err.Error(),

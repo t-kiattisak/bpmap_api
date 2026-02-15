@@ -1,29 +1,29 @@
-package usecase
+package repository
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"pbmap_api/src/config"
-	"pbmap_api/src/internal/dto"
+
+	"pbmap_api/src/internal/domain"
+	"pbmap_api/src/pkg/config"
 
 	firebase "firebase.google.com/go/v4"
 	"firebase.google.com/go/v4/messaging"
 	"google.golang.org/api/option"
 )
 
-type FCMService interface {
-	BroadcastNotification(ctx context.Context, title, body string) error
-	SubscribeToTopic(ctx context.Context, tokens []string, topic string) (*dto.TopicManagementResponse, error)
-	UnsubscribeFromTopic(ctx context.Context, tokens []string, topic string) (*dto.TopicManagementResponse, error)
-}
+// Ensure fcmRepo implements domain.FCMService.
+var _ domain.FCMService = (*fcmRepo)(nil)
 
-type fcmService struct {
+type fcmRepo struct {
 	client *messaging.Client
 }
 
-func NewFCMService(cfg *config.Config) (FCMService, error) {
+// NewFCMRepo creates the FCM repository (implements domain.FCMService).
+func NewFCMRepo(cfg *config.Config) (domain.FCMService, error) {
 	if cfg.FirebaseCredentialsPath == "" {
-		return &fcmService{}, nil
+		return &fcmRepo{}, nil
 	}
 
 	opt := option.WithCredentialsFile(cfg.FirebaseCredentialsPath)
@@ -37,26 +37,18 @@ func NewFCMService(cfg *config.Config) (FCMService, error) {
 		return nil, fmt.Errorf("error getting messaging client: %v", err)
 	}
 
-	return &fcmService{
-		client: client,
-	}, nil
+	return &fcmRepo{client: client}, nil
 }
 
-func (s *fcmService) BroadcastNotification(ctx context.Context, title, body string) error {
+func (s *fcmRepo) BroadcastNotification(ctx context.Context, title, body string) error {
 	if s.client == nil {
 		return fmt.Errorf("firebase client is not initialized")
 	}
 
 	topic := "all_devices"
-
 	message := &messaging.Message{
-		Data: map[string]string{
-			"type": "notification",
-		},
-		Notification: &messaging.Notification{
-			Title: title,
-			Body:  body,
-		},
+		Data:         map[string]string{"type": "notification"},
+		Notification: &messaging.Notification{Title: title, Body: body},
 		Android: &messaging.AndroidConfig{
 			Priority: "high",
 			Notification: &messaging.AndroidNotification{
@@ -71,21 +63,48 @@ func (s *fcmService) BroadcastNotification(ctx context.Context, title, body stri
 	if err != nil {
 		return fmt.Errorf("failed to send message to topic %s: %v", topic, err)
 	}
-
 	fmt.Printf("Successfully sent message: %s\n", response)
 	return nil
 }
 
-func (s *fcmService) SubscribeToTopic(ctx context.Context, tokens []string, topic string) (*dto.TopicManagementResponse, error) {
+func (s *fcmRepo) SendAlarm(ctx context.Context, req *domain.AlarmDispatchRequest) error {
+	if s.client == nil {
+		return fmt.Errorf("firebase client is not initialized")
+	}
+
+	centerJSON, _ := json.Marshal(req.Center)
+	message := &messaging.Message{
+		Data: map[string]string{
+			"type":     "alarm",
+			"alarm_id": req.AlarmID,
+			"urgency":  req.Urgency,
+			"center":   string(centerJSON),
+			"signal":   req.Signal,
+			"content":  req.Content,
+		},
+		Android: &messaging.AndroidConfig{
+			Priority: "high",
+		},
+		Topic: "all_devices",
+	}
+
+	response, err := s.client.Send(ctx, message)
+	if err != nil {
+		return fmt.Errorf("failed to send alarm to topic: %v", err)
+	}
+	fmt.Printf("Successfully sent alarm %s: %s\n", req.AlarmID, response)
+	return nil
+}
+
+func (s *fcmRepo) SubscribeToTopic(ctx context.Context, tokens []string, topic string) (*domain.TopicManagementResponse, error) {
 	if s.client == nil {
 		return nil, fmt.Errorf("firebase client is not initialized")
 	}
 
-	result := &dto.TopicManagementResponse{
+	result := &domain.TopicManagementResponse{
 		SuccessTokens: make([]string, 0),
-		FailureTokens: make([]dto.TopicManagementError, 0),
+		FailureTokens: make([]domain.TopicManagementError, 0),
 	}
-
 	if len(tokens) == 0 {
 		return result, nil
 	}
@@ -107,36 +126,30 @@ func (s *fcmService) SubscribeToTopic(ctx context.Context, tokens []string, topi
 		if response.FailureCount > 0 {
 			for _, errWrap := range response.Errors {
 				failedIndices[errWrap.Index] = errWrap.Reason
-
-				failedToken := batch[errWrap.Index]
-				topicError := dto.TopicManagementError{
-					Token:  failedToken,
+				result.FailureTokens = append(result.FailureTokens, domain.TopicManagementError{
+					Token:  batch[errWrap.Index],
 					Reason: errWrap.Reason,
-				}
-				result.FailureTokens = append(result.FailureTokens, topicError)
+				})
 			}
 		}
-
 		for idx, token := range batch {
 			if _, exists := failedIndices[idx]; !exists {
 				result.SuccessTokens = append(result.SuccessTokens, token)
 			}
 		}
 	}
-
 	return result, nil
 }
 
-func (s *fcmService) UnsubscribeFromTopic(ctx context.Context, tokens []string, topic string) (*dto.TopicManagementResponse, error) {
+func (s *fcmRepo) UnsubscribeFromTopic(ctx context.Context, tokens []string, topic string) (*domain.TopicManagementResponse, error) {
 	if s.client == nil {
 		return nil, fmt.Errorf("firebase client is not initialized")
 	}
 
-	result := &dto.TopicManagementResponse{
+	result := &domain.TopicManagementResponse{
 		SuccessTokens: make([]string, 0),
-		FailureTokens: make([]dto.TopicManagementError, 0),
+		FailureTokens: make([]domain.TopicManagementError, 0),
 	}
-
 	if len(tokens) == 0 {
 		return result, nil
 	}
@@ -158,22 +171,17 @@ func (s *fcmService) UnsubscribeFromTopic(ctx context.Context, tokens []string, 
 		if response.FailureCount > 0 {
 			for _, errWrap := range response.Errors {
 				failedIndices[errWrap.Index] = errWrap.Reason
-
-				failedToken := batch[errWrap.Index]
-				topicError := dto.TopicManagementError{
-					Token:  failedToken,
+				result.FailureTokens = append(result.FailureTokens, domain.TopicManagementError{
+					Token:  batch[errWrap.Index],
 					Reason: errWrap.Reason,
-				}
-				result.FailureTokens = append(result.FailureTokens, topicError)
+				})
 			}
 		}
-
 		for idx, token := range batch {
 			if _, exists := failedIndices[idx]; !exists {
 				result.SuccessTokens = append(result.SuccessTokens, token)
 			}
 		}
 	}
-
 	return result, nil
 }

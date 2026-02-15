@@ -2,7 +2,7 @@ package repository
 
 import (
 	"context"
-	"pbmap_api/src/domain"
+	"pbmap_api/src/internal/domain"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"

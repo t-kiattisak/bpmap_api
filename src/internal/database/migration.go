@@ -1,7 +1,7 @@
 package database
 
 import (
-	"pbmap_api/src/domain"
+	"pbmap_api/src/internal/domain"
 
 	"gorm.io/gorm"
 )
